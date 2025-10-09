@@ -5,14 +5,19 @@
 Read data from DSE NET-Connect, parse and print results.
 
 """
-
+import errno
+import fcntl
+import os
 import sys
 import socket
 import struct
+import time
 
+# Header size
+HEADER_SIZE = 22
 
 # Default socket receive size
-BUF_SIZE = 4096
+BUF_SIZE = HEADER_SIZE
 
 
 """"
@@ -36,18 +41,6 @@ ID  VERSION     TYPE   LENGTH  SEQUENCE  TIMESTAMP
 def parse(data):
     global BUF_SIZE
 
-    # Check we have at least a full header
-    if(len(data) < 22):
-        print("invalid size of payload: ", len(data))
-        return
-
-    # Check the data begins with our known signature
-    _magic = data[:2]
-    if(_magic != b'\x1b\x1e'):
-        print("invalid magic-id of payload: ", _magic)
-        return
-
-
     ###
     ### Parse header
     ###
@@ -61,6 +54,7 @@ def parse(data):
     # Adjust buffer size
     if(_length != BUF_SIZE):
         BUF_SIZE = _length
+        print("Changing socket recv. buffer to: ", _length)
 
 
     ###
@@ -79,11 +73,14 @@ def parse(data):
 
     # Type: profile
     if(_type >= 21 and _type <= 24):
-        _profiles = set()
-        for i in range(22, _length - 16):
-            x = float.from_bytes(data[i:i+8])
-            y = float.from_bytes(data[i+8:i+16])
-            _profiles.add(x, y)
+        _profiles = []
+        for i in range(22, _length, 16):
+            x_bytes = data[i:i+8]
+            y_bytes = data[i+8:i+16]
+            if(len(x_bytes) == 8 and len(y_bytes) == 8):
+                x = struct.unpack('d', data[i:i+8])
+                y = struct.unpack('d', data[i+8:i+16])
+                _profiles.append({x, y})
         print("version: %d, type: %d, length: %d, sequence: %d, timestamp: %d, profiles: %d" % (_version, _type, _length, _sequence, _timestamp, len(_profiles)))
 
 
@@ -97,11 +94,26 @@ port = int(sys.argv[2]) if len(sys.argv) > 2 else 2730
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect((host, port))
+    fcntl.fcntl(s, fcntl.F_SETFL, os.O_NONBLOCK)
 
     # Send the 'start' command, terminated with a newline, to receive data
     s.send(b'start')
     s.send(b'\n')
 
     while True:
-        parse(s.recv(BUF_SIZE))
+        try:
+            msg = s.recv(BUF_SIZE)
+        except socket.error as e:
+            err = e.args[0]
+            if err == errno.EAGAIN or err == errno.EWOULDBLOCK:
+                time.sleep(0.1)
+                continue
+            else:
+                # a "real" error occurred
+                print(e)
+                sys.exit(1)
+        else:
+            _magic = msg[:2]
+            if(_magic == b'\x1b\x1e'):
+                parse(msg)
 
