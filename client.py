@@ -52,7 +52,7 @@ def parse(data):
     _timestamp = int.from_bytes(data[14:22])
 
     # Adjust buffer size
-    if(_length != BUF_SIZE):
+    if _length != BUF_SIZE:
         BUF_SIZE = _length
         print("Changing socket recv. buffer to: ", _length)
 
@@ -62,24 +62,25 @@ def parse(data):
     ###
 
     # Type: error
-    if(_type == 1):
+    if _type == 1:
         _error = int.from_bytes(data[22:26])
         print("version: %d, type: %d, length: %d, timestamp: %d, error: %d" % (_version, _type, _length, _timestamp, _error))
 
     # Type: distance
-    if(_type == 11):
+    if _type == 11:
         _distance = int.from_bytes(data[22:26])
         print("version: %d, type: %d, length: %d, sequence: %d, timestamp: %d, distance: %d" % (_version, _type, _length, _sequence, _timestamp, _distance))
 
     # Type: profile
-    if(_type >= 21 and _type <= 24):
+    if 21 <= _type <= 24:
         _profiles = []
+        # Profile scanner has 400, 800 or 1600 measurement points in a "sweep", each set of points taking up 16 Bytes
         for i in range(22, _length, 16):
-            x_bytes = data[i:i+8]
-            y_bytes = data[i+8:i+16]
-            if(len(x_bytes) == 8 and len(y_bytes) == 8):
-                x = struct.unpack('d', data[i:i+8])
-                y = struct.unpack('d', data[i+8:i+16])
+            x_bytes = data[i:i+8]       # 8 Bytes for double x-coordinate
+            y_bytes = data[i+8:i+16]    # 8 Bytes for double y-coordinate
+            if len(x_bytes) == 8 and len(y_bytes) == 8:
+                x = struct.unpack('d', x_bytes)
+                y = struct.unpack('d', y_bytes)
                 _profiles.append({x, y})
         print("version: %d, type: %d, length: %d, sequence: %d, timestamp: %d, profiles: %d" % (_version, _type, _length, _sequence, _timestamp, len(_profiles)))
 
@@ -114,6 +115,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 sys.exit(1)
         else:
             _magic = msg[:2]
-            if(_magic == b'\x1b\x1e'):
+            if _magic == b'\x1b\x1e' and len(msg) >= 22:
                 parse(msg)
 
