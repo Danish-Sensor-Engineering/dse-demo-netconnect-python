@@ -1,19 +1,21 @@
 version: 43
 jobs:
-  - name: Push to Github
-    steps:
-      - type: PushRepository
-        name: Github
-        remoteUrl: https://github.com/Danish-Sensor-Engineering/dse-demo-netconnect-python
-        userName: mnellemann
-        passwordSecret: GITHUB-TOKEN
-        force: false
-        condition: SUCCESSFUL
-        optional: false
-    triggers:
-      - type: BranchUpdateTrigger
-        branches: main
-        projects: dse/dse-demo-netconnect-python
-    maxRetries: 3
-    retryDelay: 30
-    timeout: 14400
+- name: Push to Github
+  steps:
+  - type: PushRepository
+    name: Github
+    remoteUrl: https://github.com/Danish-Sensor-Engineering/dse-demo-netconnect-python
+    userName: mnellemann
+    passwordSecret: GITHUB-TOKEN
+    force: false
+    condition: SUCCESSFUL
+    optional: false
+  triggers:
+  - type: BranchUpdateTrigger
+    branches: main
+    userMatch: anyone
+    projects: dse/dse-demo-netconnect-python
+  retryCondition: never
+  maxRetries: 3
+  retryDelay: 30
+  timeout: 14400
