@@ -14,9 +14,6 @@ jobs:
       - type: BranchUpdateTrigger
         branches: main
         projects: dse/dse-demo-netconnect-python
-    jobDependencies:
-      - jobName: Test
-        requireSuccessful: true
     maxRetries: 3
     retryDelay: 30
     timeout: 14400
