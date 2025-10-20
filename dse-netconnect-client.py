@@ -87,7 +87,7 @@ def parse(data):
 
 
 """
-Main - Connect to DSE NET-Connect 
+Main - Connect to DSE NET-Connect
 """
 
 host = sys.argv[1] if len(sys.argv) > 1 else "localhost"
