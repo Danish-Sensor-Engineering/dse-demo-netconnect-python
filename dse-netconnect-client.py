@@ -21,7 +21,7 @@ BUF_SIZE = HEADER_SIZE
 
 
 """"
-Parse the DSE NET-Connect Measurement Datagram
+Parse the DSE NET-Connect Network Payload
 
 <---------------------- HEADER 22 bytes -------------------->     <----- DATA ----->
 _short   _short   _short    _int       _int      _long
