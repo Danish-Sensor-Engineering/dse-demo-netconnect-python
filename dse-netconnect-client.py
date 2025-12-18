@@ -35,8 +35,6 @@ ID  VERSION     TYPE   LENGTH  SEQUENCE  TIMESTAMP
 - SEQUENCE: Counter that wraps at MAX and starts over
 - TIMESTAMP: Time in milliseconds (Unix Epoch) when measurement was received from device
 - DATA: Depends on TYPE
-- int (4-bytes) when ERROR and DISTANCE
-- list (no. points in sweep) of 2 x double (8-bytes) for X & Y coordinates when PROFILE
 """
 def parse(data):
     global BUF_SIZE
@@ -74,14 +72,16 @@ def parse(data):
     # Type: profile
     if 21 <= _type <= 24:
         _profiles = []
-        # Profile scanner has 400, 800 or 1600 measurement points in a "sweep", each set of points taking up 16 Bytes
-        for i in range(22, _length, 16):
+        # Profile scanner has 400, 800 or 1600 measurement points in a "sweep", each set of points taking up 20 Bytes
+        for i in range(22, _length, 20):
+            p_bytes = data[i:i+4]       # 4 Bytes for int polar distance
             x_bytes = data[i:i+8]       # 8 Bytes for double x-coordinate
             y_bytes = data[i+8:i+16]    # 8 Bytes for double y-coordinate
-            if len(x_bytes) == 8 and len(y_bytes) == 8:
+            if len(p_bytes) == 4 and len(x_bytes) == 8 and len(y_bytes) == 8:
+                p = struct.unpack('d', x_bytes)
                 x = struct.unpack('d', x_bytes)
                 y = struct.unpack('d', y_bytes)
-                _profiles.append({x, y})
+                _profiles.append({p, x, y})
         print("version: %d, type: %d, length: %d, sequence: %d, timestamp: %d, profiles: %d" % (_version, _type, _length, _sequence, _timestamp, len(_profiles)))
 
 
@@ -90,7 +90,7 @@ def parse(data):
 Main - Connect to DSE NET-Connect
 """
 
-host = sys.argv[1] if len(sys.argv) > 1 else "localhost"
+host = sys.argv[1] if len(sys.argv) > 1 else "192.168.8.150"
 port = int(sys.argv[2]) if len(sys.argv) > 2 else 2730
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
