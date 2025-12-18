@@ -90,7 +90,7 @@ def parse(data):
 Main - Connect to DSE NET-Connect
 """
 
-host = sys.argv[1] if len(sys.argv) > 1 else "192.168.8.150"
+host = sys.argv[1] if len(sys.argv) > 1 else "localhost"
 port = int(sys.argv[2]) if len(sys.argv) > 2 else 2730
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
